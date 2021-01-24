@@ -9,7 +9,7 @@ const parseCookies = (req, res, next) => {
     }
 
     return cookies;
-  }, {})
+  }, {});
 
   req.cookies = parsedCookies;
 

@@ -12,7 +12,7 @@ module.exports.createSession = (req, res, next) => {
         throw hash; // throw an error and go to the catch block where error handling occurs
       }
       // attempt to load session from database
-      return models.Sessions.get({hash}) // returns a promise or a value to the next then block / asynchronous function
+      return models.Sessions.get({hash}); // returns a promise or a value to the next then block / asynchronous function
     })
     .then(session => {
       // if session doesn't exist in database
@@ -35,17 +35,17 @@ module.exports.createSession = (req, res, next) => {
           // it is not because if a valid cookie exists, setting cookie headers is not needed
           res.cookie('shortlyid', session.hash); // set cookie on response
           return session; // return session to models.Sessions.create()
-        })
+        });
     })
     .then(session => {
       // otherwise
       // set session on request object
       req.session = session;
       next();
-    })
-    // if a then() block takes in an input and returns that same input, tap() can be used instead of then()
-    // tap() does not expect a return value and passes its input to the next then() block
-    // Ex: then(session => {return session}) ===> tap(session)
+    });
+  // if a then() block takes in an input and returns that same input, tap() can be used instead of then()
+  // tap() does not expect a return value and passes its input to the next then() block
+  // Ex: then(session => {return session}) ===> tap(session)
 };
 
 /************************************************************/
