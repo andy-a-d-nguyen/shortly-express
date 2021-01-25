@@ -9,7 +9,7 @@ module.exports.createSession = (req, res, next) => {
     // if session cookie doesn't exist
       if (!hash) {
         // make a new session
-        throw hash; // throw an error and go to the catch block where error handling occurs
+        throw hash; // throw an exception or an error and go to the catch block where exception or error handling occurs
       }
       // attempt to load session from database
       return models.Sessions.get({hash}); // returns a promise or a value to the next then block / asynchronous function
@@ -18,12 +18,12 @@ module.exports.createSession = (req, res, next) => {
       // if session doesn't exist in database
       if (!session) {
         // make a new session
-        throw session; // throw an error and go to the catch block where error handling occurs
+        throw session; // throw an exception or an error and go to the catch block where exception or error handling occurs
       }
 
       return session;
     })
-    .catch(() => { // error handling when throw occurs
+    .catch(() => { // exception or error handling when throw occurs
       // make a new session
       return models.Sessions.create() // create a session and send it to the next block by returning
         .then(results => {
@@ -52,3 +52,10 @@ module.exports.createSession = (req, res, next) => {
 // Add additional authentication middleware functions below
 /************************************************************/
 
+module.exports.verifySession = (req, res, next) => {
+  if (!models.Sessions.isLoggedIn(req.session)) {
+    res.redirect('/login');
+  } else {
+    next();
+  }
+};

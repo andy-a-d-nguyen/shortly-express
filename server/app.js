@@ -18,15 +18,15 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use(require('./middleware/cookieParser'));
 app.use(Auth.createSession);
 
-app.get('/', (req, res) => {
+app.get('/', Auth.verifySession, (req, res) => {
   res.render('index');
 });
 
-app.get('/create', (req, res) => {
+app.get('/create', Auth.verifySession, (req, res) => {
   res.render('index');
 });
 
-app.get('/links', (req, res, next) => {
+app.get('/links', Auth.verifySession, (req, res, next) => {
   models.Links.getAll()
     .then(links => {
       res.status(200).send(links);
@@ -36,7 +36,7 @@ app.get('/links', (req, res, next) => {
     });
 });
 
-app.post('/links', (req, res, next) => {
+app.post('/links', Auth.verifySession, (req, res, next) => {
   var url = req.body.url;
   if (!models.Links.isValidUrl(url)) {
     // send back a 404 if link is not valid
@@ -74,9 +74,74 @@ app.post('/links', (req, res, next) => {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+app.get('/login', (req, res) => {
+  res.render('login');
+});
 
+app.get('/signup', (req, res) => {
+  res.render('signup');
+});
 
+app.get('/logout', (req, res) => {
 
+});
+
+app.post('/login', (req, res, next) => {
+  var username = req.body.username;
+  var password = req.body.password;
+
+  // find user by username
+  models.Users.get({username})
+    .then(user => {
+      // if not found or not valid password
+      if (!user || !models.Users.compare(password, user.password, user.salt)) {
+        // redirect to /login
+        throw user;
+      }
+
+      return models.Sessions.update({id: req.session.id}, {userId: user.id});
+    })
+    .then(() => {
+      // otherwise, redirect to /
+      res.redirect('/');
+    })
+    .catch(() => {
+      res.redirect('/login');
+    });
+});
+
+app.post('/signup', (req, res, next) => {
+  var username = req.body.username;
+  var password = req.body.password;
+
+  // check if user exist
+  models.Users.get({username})
+    .then(user => {
+      // if exists, redirect to signup
+      if (user) {
+        // redirect to /signup
+        throw user;
+        // by throwing, the next 2 then() blocks are skipped and the code execution goes to the catch() block
+        // if res.redirect() was invoked here, the next 2 then() blocks and line 108 will still be executed
+      }
+      // otherwise, create a user
+      return models.Users.create({username, password});
+    })
+    .then(results => {
+      // upgrade session associated with user
+      return models.Sessions.update({id: req.session.id}, {userId: results.insertId});
+      // return models.Sessions.update({hash: req.session.hash}, {userId: results.insertId}); ===> another way to identify the user is through the hash
+    })
+    .then(user => {
+      // redirect user to / route
+      res.redirect('/');
+    })
+    .catch(user => {
+      res.redirect('/signup');
+    });
+  // error() block is used to handle errors / when a promise is rejected
+  // catch() block is used to handle exceptions or errors
+});
 /************************************************************/
 // Handle the code parameter route last - if all other routes fail
 // assume the route is a short code and try and handle it here.
